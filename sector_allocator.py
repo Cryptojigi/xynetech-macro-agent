@@ -5,6 +5,7 @@ For applying LLM sentiment logic to macroeconomic texts and determining tokenize
 """
 
 import os
+import time
 import requests
 from dotenv import load_dotenv
 
@@ -58,7 +59,7 @@ def analyze_macro_sentiment(text_content):
         return analyze_macro_sentiment_fallback(text_content)
         
     # Standard Qwen compatible Chat Completion API endpoint
-    url = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+    url = os.getenv("QWEN_BASE_URL", "https://hackathon.bitgetops.com/v1/chat/completions")
     headers = {
         "Authorization": f"Bearer {QWEN_API_KEY}",
         "Content-Type": "application/json"
@@ -72,7 +73,7 @@ def analyze_macro_sentiment(text_content):
     )
     
     payload = {
-        "model": "qwen-plus",
+        "model": "qwen3.6-plus",
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": text_content}
@@ -80,27 +81,37 @@ def analyze_macro_sentiment(text_content):
         "temperature": 0.0
     }
     
-    try:
-        response = requests.post(url, headers=headers, json=payload, timeout=10)
-        
-        if response.status_code == 200:
-            result = response.json()
-            content = result["choices"][0]["message"]["content"].strip()
+    max_retries = 3
+    for attempt in range(1, max_retries + 1):
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=30)
             
-            # Match the parsed response to our exact categories
-            for category in ["Hawkish", "Dovish", "Neutral"]:
-                if category.lower() in content.lower():
-                    return category
-                    
-            print(f"[WARNING] API returned ambiguous content: '{content}'. Falling back to heuristics.")
+            if response.status_code == 200:
+                result = response.json()
+                content = result["choices"][0]["message"]["content"].strip()
+                
+                # Match the parsed response to our exact categories
+                for category in ["Hawkish", "Dovish", "Neutral"]:
+                    if category.lower() in content.lower():
+                        return category
+                        
+                print(f"[WARNING] API returned ambiguous content: '{content}'. Falling back to heuristics.")
+                return analyze_macro_sentiment_fallback(text_content)
+            else:
+                print(f"[WARNING] Qwen API call failed (HTTP {response.status_code}): {response.text}. Falling back to heuristics.")
+                return analyze_macro_sentiment_fallback(text_content)
+                
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+            print(f"[WARNING] Connection attempt {attempt}/{max_retries} failed due to timeout or connection error: {e}.")
+            if attempt < max_retries:
+                print("Retrying in 2 seconds...")
+                time.sleep(2)
+            else:
+                print("Max retries reached. Falling back to heuristics.")
+                return analyze_macro_sentiment_fallback(text_content)
+        except Exception as e:
+            print(f"[WARNING] Non-recoverable exception encountered during Qwen API call: {e}. Falling back to heuristics.")
             return analyze_macro_sentiment_fallback(text_content)
-        else:
-            print(f"[WARNING] Qwen API call failed (HTTP {response.status_code}): {response.text}. Falling back to heuristics.")
-            return analyze_macro_sentiment_fallback(text_content)
-            
-    except Exception as e:
-        print(f"[WARNING] Exception encountered during Qwen API call: {e}. Falling back to heuristics.")
-        return analyze_macro_sentiment_fallback(text_content)
 
 def calculate_target_allocation(sentiment):
     """
