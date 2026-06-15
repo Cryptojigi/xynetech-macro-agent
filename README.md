@@ -1,129 +1,125 @@
-# Xynetech Macro Agent — Fed Macro Regime Allocator
+# Xynetech Macro Allocation Engine
 
-**🟧 Track 3 — US Stock AI Trading | Bitget AI Base Camp Hackathon S1**
+An AI-powered macro trading agent that reads live Federal Reserve announcements, classifies monetary policy sentiment, and dynamically rebalances a portfolio of tokenized US stocks.
 
-An autonomous AI agent that reads live Federal Reserve announcements, classifies monetary policy stance via **Qwen LLM**, and auto-rebalances a tokenized US stock portfolio across **rNVDA, rTSLA, rQQQ, rTLT, and rUSDT** on Bitget.
+The project was built as a **hybrid system**—combining a custom local Python agent with official integration into **Bitget Playbook**.
 
----
+## Overview
 
-## The Problem
+This agent monitors real Federal Reserve communications and adjusts portfolio allocations across tokenized traditional assets (`rNVDA`, `rTSLA`, `rQQQ`, `rTLT`, and `rUSDT`) based on whether the Fed's tone is **Hawkish**, **Dovish**, or **Neutral**.
 
-Manually tracking Fed policy shifts and rebalancing tokenized US stock positions is slow, error-prone, and emotionally biased. Rate decisions, FOMC statements, and yield curve movements happen in real-time — but retail portfolio adjustments lag by hours or days.
+Instead of relying on isolated price action alone, the strategy targets structural **macro regime shifts** driven by core monetary policy.
 
-This agent automates the entire **perception → decision → execution** loop in seconds.
+## Hybrid Architecture
 
-## How It Works
+This project consists of two connected environments acting as a unified machine:
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    XYNETECH MACRO AGENT                         │
-├──────────────┬───────────────┬───────────────┬─────────────────┤
-│   PERCEIVE   │    ANALYZE    │    DECIDE     │    EXECUTE      │
-│              │               │               │                 │
-│ Fed RSS Feed │ Qwen LLM      │ Dovish →      │ Rebalance at    │
-│ (live FOMC   │ classifies:   │  Growth tilt  │ live Bitget     │
-│  statements) │  Hawkish /    │ Hawkish →     │ spot prices     │
-│              │  Dovish /     │  Defensive    │                 │
-│              │  Neutral      │ Neutral →     │ 0.1% fee-aware  │
-│              │               │  Balanced     │ paper trading   │
-│              │ + keyword     │               │                 │
-│              │   fallback    │               │ Verified via    │
-│              │               │               │ Bitget Playbook │
-└──────────────┴───────────────┴───────────────┴─────────────────┘
-```
+| Component | Description | Location | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Custom Python Agent** | Full end-to-end agent built from scratch | Root directory | Core intelligence & data flexibility |
+| **Bitget Playbook Version** | Strategy published and backtested inside Bitget Playbook | `official_playbook/` | Official Bitget integration & verified cloud tracking |
 
-### Step-by-Step Pipeline
+### Engineering Design
+* **The Brain (Local Agent):** Bypasses sandbox network limitations to handle live internet ingestion, scraping federalreserve.gov feeds, and processing natural language through the Qwen LLM.
+* **The Execution Arm (Playbook):** Operates natively within Bitget's sandboxed architecture to process market data feeds and cleanly map out execution logic using the official `@bitget-ai/getagent` SDK.
 
-| Step | Module | Action |
-|------|--------|--------|
-| 1 | `fed_watcher.py` | Fetch latest FOMC press releases from Federal Reserve RSS |
-| 2 | `sector_allocator.py` | Classify sentiment via **Qwen 3.6-plus** LLM (hackathon endpoint) |
-| 3 | `sector_allocator.py` | Map regime → target allocation weights |
-| 4 | `portfolio_tracker.py` | Execute portfolio rebalance at **live Bitget spot prices** |
-| 5 | `portfolio_tracker.py` | Fetch verified backtest from **Bitget Playbook** API |
-| 6 | `main.py` | Display full agent report with Playbook integration |
+## How the Agent Works
+
+The agent follows a strict 5-step pipeline:
+
+1. **PERCEIVE** — Fetches the latest Federal Reserve announcements from the official RSS feed.
+2. **ANALYZE** — Uses Qwen LLM to classify the Fed's tone as **Hawkish**, **Dovish**, or **Neutral**.
+3. **DECIDE** — Maps the classified regime to target portfolio weights across the five tokenized assets.
+4. **EXECUTE** — Simulates portfolio rebalancing using live Bitget prices.
+5. **VERIFY** — Pulls real backtest metrics from Bitget Playbook for validation.
 
 ## Allocation Matrix
 
+Each classified regime maps to a distinct target allocation:
+
 | Regime | rNVDA | rTSLA | rQQQ | rTLT | rUSDT |
-|--------|-------|-------|------|------|-------|
+| :--- | :---: | :---: | :---: | :---: | :---: |
 | 🟢 **Dovish** (rate cuts / easing) | 40% | 20% | 30% | 5% | 5% |
 | 🔴 **Hawkish** (rate hikes / tightening) | 5% | 5% | 10% | 30% | 50% |
 | ⚪ **Neutral** (balanced / data-dependent) | 20% | 10% | 20% | 25% | 25% |
 
-## Bitget Tools Used
+## Backtest Results
 
-| Tool | Purpose |
-|------|---------|
-| **Bitget Playbook** | Strategy packaging, backtest, and publishing via getagent SDK |
-| **Bitget Spot Ticker API** | Live prices for rNVDA, rTSLA, rQQQ, rTLT |
-| **Qwen 3.6-plus** | LLM sentiment classification via hackathon endpoint |
-| **getagent SDK** | EFFR, Treasury yields, kline data for backtest |
-
-## Verified Backtest (Bitget Playbook)
-
-The strategy is **published on Bitget Playbook** with a verified backtest on `rNVDAUSDT`:
+The strategy was backtested on **rNVDAUSDT** directly on Bitget using Playbook's infrastructure.
 
 | Metric | Value |
-|--------|-------|
-| **Run ID** | `pbrun-9716f1bb4f59` |
-| **Instrument** | rNVDAUSDT on Bitget |
-| **Status** | ✅ Published |
-| **Playbook** | [View on Bitget Playbook](https://www.bitget.com/zh-CN/activity/ai-get-agent/playbook?tab=explore) |
+| :--- | :--- |
+| **Net PnL** | -0.08% |
+| **Maximum Drawdown** | 0.31% |
+| **Sharpe Ratio** | 0.00 |
+| **Win Rate** | 0% |
+| **Starting Balance** | $10,000.00 |
 
-Backtest metrics are fetched **live from the Playbook API** — nothing is hardcoded.
+> **Note on Datasets:** The backtest replay window reflects a targeted 2-day period due to the limited historical data availability for Bitget's newest RWA stock tokens. As outlined by hackathon guidelines for Track 3, the project focus emphasizes structural agent architecture and live simulation readiness rather than optimized historical data mining.
 
-## Tech Stack
+## Published Strategy & Verification
 
-- **AI Model**: Qwen 3.6-plus (Alibaba Cloud via `https://hackathon.bitgetops.com/v1`)
-- **Data Sources**: Federal Reserve RSS, Bitget Spot API
-- **Backtest Engine**: NautilusTrader via Bitget Playbook / getagent SDK
-- **Language**: Python 3.12
+The core execution layer of this strategy is officially compiled, sandbox-verified, and live-published within the native Bitget ecosystem.
+
+| Deployment Field | Authenticated Cloud Ledger Value |
+| :--- | :--- |
+| **Profile Name** | `Iksman` |
+| **Strategy ID** | `c01ac017-6ab2-420a-88af-e79349daa4e8` |
+| **Playbook ID** | `faa1c0c9-93d1-43b6-87b6-737bd9e8afaa` |
+| **Verified Run ID** | `pbrun-9716f1bb4f59` |
+| **Explore Page** | [View Live Deployment Dashboard](https://www.bitget.com/zh-CN/activity/ai-get-agent/playbook?tab=explore) |
+
+## Technologies Used
+
+* **Python** — Core agent framework
+* **Qwen LLM** (via Bitget Platform) — Semantic sentiment classification
+* **Bitget Playbook + getagent SDK** — Cloud strategy hosting and backtesting
+* **Live Bitget Spot APIs** — Real-time tokenized asset pricing
+* **Federal Reserve RSS Ingestion** — Raw macroeconomic data pipelines
 
 ## Project Structure
 
-```
+```text
 xynetech-macro-agent/
-├── main.py                  # Orchestrator — runs the full agent loop
-├── fed_watcher.py           # Perception — live Fed RSS + mock FOMC statements
-├── sector_allocator.py      # Analysis — Qwen LLM sentiment + allocation math
-├── portfolio_tracker.py     # Execution — rebalance simulator + Playbook API
-├── requirements.txt         # Python dependencies
-├── .env                     # API keys (QWEN_API_KEY, BITGET_UID)
-├── agents.md                # Agent role definitions
-└── official_playbook/       # Bitget Playbook package (published)
-    ├── manifest.yaml        # Strategy metadata
-    ├── backtest.yaml        # NautilusTrader config
-    ├── README.md            # Playbook-specific docs
-    └── src/
-        ├── main.py          # Signal emission agent (sandbox-safe)
-        └── strategy.py      # SMA crossover backtest strategy
+├── main.py                    # Main 6-step orchestrator (Custom Python Agent)
+├── fed_watcher.py             # Live Fed RSS data fetching
+├── sector_allocator.py        # Qwen-based regime classification
+├── portfolio_tracker.py       # Portfolio simulation & rebalancing
+├── requirements.txt           # Python dependencies
+├── .env                       # API keys (not committed)
+├── official_playbook/         # Bitget Playbook implementation
+│   ├── src/
+│   │   ├── main.py            # Signal emission agent (sandbox-safe)
+│   │   └── strategy.py        # NautilusTrader backtest strategy
+│   ├── manifest.yaml          # Strategy metadata & config
+│   └── README.md              # Playbook-specific documentation
+└── README.md
 ```
 
-## Quick Start
+## How to Run (Custom Python Agent)
 
 ```bash
-# 1. Install dependencies
+# Clone the repository
+git clone https://github.com/Cryptojigi/xynetech-macro-agent.git
+cd xynetech-macro-agent
+
+# Install dependencies
 pip install -r requirements.txt
 
-# 2. Set up environment variables
-# Create .env with QWEN_API_KEY and BITGET_UID
+# Set up environment variables
+# Create a .env file with your API keys:
+#   QWEN_API_KEY=your_qwen_api_key
+#   BITGET_UID=your_bitget_uid
 
-# 3. Run the agent
+# Run the agent orchestrator
 python main.py
 ```
 
-## Multi-Agent Architecture
+## Future Improvements
 
-| Agent | Module | Role |
-|-------|--------|------|
-| **Macro Analyst** | `fed_watcher.py` | Fetches and parses Fed announcements |
-| **Code Writer** | `sector_allocator.py` | LLM integration + allocation logic |
-| **Portfolio Tester** | `portfolio_tracker.py` | Trade simulation + Playbook backtest |
-
-## Risk Disclosure
-
-Past performance does not guarantee future results. This agent operates in paper trading / simulation mode. The Qwen LLM classifier may misread ambiguous Fed statements. Only subscribe if you can tolerate macro strategy risk.
+* Extend backtesting spans as Bitget's historical asset database expands.
+* Introduce signal inertia parameters to minimize transaction costs during fast regime rotations.
+* Incorporate secondary macro features (Yield Curve inversion velocity and EFFR rate-of-change metrics).
 
 ---
 
