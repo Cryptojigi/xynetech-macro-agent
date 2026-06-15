@@ -1,0 +1,78 @@
+name: fed-macro-regime-allocator
+display_name: "Fed Macro Regime Allocator"
+version: "1.0.0"
+description: "AI agent that reads live Federal Reserve signals, classifies monetary policy stance via Qwen LLM, and auto-rebalances a tokenized US stock portfolio across rNVDA, rTSLA, rQQQ, rTLT, and rUSDT."
+long_description: |
+  An autonomous macro-driven trading agent for Bitget's tokenized US stock
+  market. It solves a real problem: manually tracking Fed policy shifts and
+  rebalancing across tokenized equities is slow and error-prone. This agent
+  automates the entire loop in seconds.
+
+  PERCEPTION — The agent fetches three live data streams:
+    1. Federal Reserve monetary policy press releases (official RSS feed)
+    2. Effective Federal Funds Rate (EFFR) and 2Y/10Y Treasury yields
+    3. Live tokenized US stock prices from Bitget (rNVDA, rTSLA, rQQQ, rTLT)
+
+  ANALYSIS — A multi-signal regime classifier fuses three independent signals:
+    1. EFFR rate trend (30-day direction → rate cuts vs hikes)
+    2. Treasury yield curve shape (2Y-10Y spread → growth vs recession)
+    3. NLP sentiment of the latest Fed announcement (Qwen LLM with keyword fallback)
+  The three signals vote to produce a consensus regime: Dovish, Hawkish, or Neutral.
+
+  DECISION — Each regime maps to a target allocation matrix:
+    - Dovish → Aggressive growth tilt (rNVDA 30%, rTSLA 25%, rQQQ 25%)
+    - Hawkish → Defensive shift (rTLT 45%, rUSDT 40%)
+    - Neutral → Balanced allocation (20% each)
+
+  EXECUTION — The agent simulates a portfolio rebalance at current Bitget
+  market prices, computing position sizes, notional values, and daily P&L
+  for each tokenized asset. Paper trading / simulation mode.
+
+  RISK MANAGEMENT — The yield curve signal acts as a recession early-warning
+  system. When the 2Y-10Y spread inverts, the agent automatically shifts to
+  defensive positioning regardless of other signals, protecting capital
+  before equity drawdowns materialize.
+
+  Past performance does not guarantee future results. Only subscribe if you
+  can tolerate the drawdown risk inherent in regime-driven macro strategies.
+
+market_type: spot
+trading_symbols: ["rNVDAUSDT"]
+tags: ["macro", "fed", "regime", "tokenized-stocks", "qwen", "ai-agent", "us-stocks"]
+
+decision_mode: deterministic
+backtest_support: full
+runtime_profile: deterministic
+execution_mode: signal_only
+follow_trade_supported: false
+
+strategy_config:
+  portfolio_symbols: ["rNVDAUSDT", "rTSLAUSDT", "rQQQUSDT", "rTLTUSDT", "USDT"]
+  primary_symbol: "rNVDAUSDT"
+  leverage: 1
+  margin_budget: "10000"
+  dovish_weights:
+    rNVDAUSDT: 0.30
+    rTSLAUSDT: 0.25
+    rQQQUSDT: 0.25
+    rTLTUSDT: 0.10
+    USDT: 0.10
+  hawkish_weights:
+    rNVDAUSDT: 0.05
+    rTSLAUSDT: 0.05
+    rQQQUSDT: 0.05
+    rTLTUSDT: 0.45
+    USDT: 0.40
+  neutral_weights:
+    rNVDAUSDT: 0.20
+    rTSLAUSDT: 0.20
+    rQQQUSDT: 0.20
+    rTLTUSDT: 0.20
+    USDT: 0.20
+
+user_config_schema:
+  margin_budget:
+    type: string
+    default: "10000"
+    pattern: "^[0-9]+(\\.[0-9]+)?$"
+    label: "Portfolio budget USDT"

@@ -1,3 +1,8 @@
 .env
 .venv/
 __pycache__/
+*.tar.gz
+node_modules/
+official_playbook/run_body.json
+official_playbook/publish_body.json
+run_body_nvda.json

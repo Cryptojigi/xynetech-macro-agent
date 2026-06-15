@@ -191,12 +191,48 @@ class Portfolio:
         print(f" Initial Value        : ${self.initial_value:,.2f} USDT")
         print(f" Net Profit/Loss      : ${net_profit_loss:+,.2f} USDT ({profit_loss_pct:+.2f}%)")
         print("-" * 55)
-        print(" HISTORICAL SIMULATION BACKTEST MATRIX (Aggregated Strategy Performance)")
+        print(" BITGET PLAYBOOK BACKTEST (Verified on rNVDAUSDT)")
         print("-" * 55)
-        print(" Historical Sharpe Ratio             : 1.84")
-        print(" Maximum Strategy Drawdown           : -4.21%")
-        print(" Simulated Lookback 30-Day Net Yield : +12.38%")
+        playbook_metrics = self._fetch_playbook_backtest()
+        if playbook_metrics:
+            print(f" Net PnL              : ${playbook_metrics['net_pnl']:+,.2f} USDT")
+            print(f" Total Return         : {playbook_metrics['total_return_pct']:+.4f}%")
+            print(f" Maximum Drawdown     : -{playbook_metrics['max_drawdown_pct']:.4f}%")
+            print(f" Sharpe Ratio         : {playbook_metrics['sharpe_ratio']:.2f}")
+            print(f" Win Rate             : {playbook_metrics['win_rate']:.1f}%")
+            print(f" Total Trades         : {playbook_metrics['total_trades']}")
+            print(f" Data Bars            : {playbook_metrics['rows']}")
+            print(f" Run ID               : {playbook_metrics['run_id']}")
+        else:
+            print(" [INFO] Playbook backtest data unavailable. Run backtest")
+            print("        via official_playbook/ to generate verified metrics.")
         print("=" * 55 + "\n")
+
+    @staticmethod
+    def _fetch_playbook_backtest():
+        """Fetch verified backtest results from the published Bitget Playbook run."""
+        try:
+            url = "https://api.bitget.com/api/v1/playbook/run?run_id=pbrun-9716f1bb4f59"
+            headers = {"ACCESS-KEY": "e9a0bf09672349cb9320b349123cd9de"}
+            resp = requests.get(url, headers=headers, timeout=10)
+            if resp.status_code == 200:
+                data = resp.json().get("data", {})
+                metrics = data.get("metrics_output", {}).get("summary", {})
+                if metrics:
+                    return {
+                        "net_pnl": float(metrics.get("net_pnl", 0)),
+                        "total_return_pct": float(metrics.get("total_return_pct", 0)),
+                        "max_drawdown_pct": float(metrics.get("max_drawdown_pct", 0)),
+                        "sharpe_ratio": float(metrics.get("sharpe_ratio", 0)),
+                        "win_rate": float(metrics.get("win_rate_pct", 0)),
+                        "total_trades": int(metrics.get("total_trades", 0)),
+                        "rows": int(data.get("metrics_output", {}).get("rows", 0)
+                                     or metrics.get("position_count", 0)),
+                        "run_id": data.get("run_id", "pbrun-9716f1bb4f59"),
+                    }
+        except Exception:
+            pass
+        return None
 
 if __name__ == "__main__":
     print("=== Testing portfolio_tracker.py ===")

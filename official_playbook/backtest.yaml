@@ -1,0 +1,33 @@
+venue:
+  name: BITGET
+  account_type: CASH
+  oms_type: NETTING
+  starting_balances:
+    - amount: 10000
+      currency: USDT
+
+strategy:
+  module: strategy
+  class: FedRegimeStrategy
+  config_class: FedRegimeStrategyConfig
+  config:
+    order_id_tag: "001"
+    trade_size: "1.0"
+    fast_period: 5
+    slow_period: 15
+
+instrument:
+  id: rNVDAUSDT.BITGET
+  kind: spot
+  raw_symbol: rNVDAUSDT
+  base_currency: rNVDA
+  quote_currency: USDT
+  settlement_currency: USDT
+  price_precision: 2
+  size_precision: 4
+  price_increment: "0.01"
+  size_increment: "0.0001"
+  lot_size: "0.0001"
+  maker_fee: "0.001"
+  taker_fee: "0.001"
+  bar_type: rNVDAUSDT.BITGET-1-DAY-LAST-EXTERNAL
